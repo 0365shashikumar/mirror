@@ -1,0 +1,22 @@
+const express = require('express');
+const pincodeController = require('../../controller/pincode/pincode.controller');
+const authenticateJWT = require('../../middleware/authMiddleware');
+//const logMiddleware = require('../../middleware/logMiddleware');
+
+
+
+const pincode = express.Router();
+
+
+pincode.post('/get-pincode',(req, res) => {
+
+	pincodeController.getPincode(req.body,res).then(data => res.json(data));
+});
+
+//pincode.post('/save-pincode',(req, res) => {
+
+//	pincodeController.savePincode(req.body,res).then(data => res.json(data));
+//});
+
+//
+module.exports = pincode;
