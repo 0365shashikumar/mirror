@@ -1,7 +1,30 @@
 // Define the Countries model
 module.exports = (sequelize, DataTypes, Model) => {
 
-    class add_money extends Model {}
+    class add_money extends Model {
+      static async insertData(data) {
+        try {
+          const result = await this.create(data);
+            return result;
+        } catch (error) {
+            console.error('Error:', error);
+            throw error;
+        }
+      }
+
+      static async getCount(trans_no) {
+        try {
+          const result = await this.count({
+            where: {trans_no}
+          });
+          return result;
+        } catch (error) {
+            console.error('Error:', error);
+            throw error;
+        }
+      }
+
+    }
 
     add_money.init({
         id: {
@@ -20,7 +43,7 @@ module.exports = (sequelize, DataTypes, Model) => {
           },
         status: {
               type: DataTypes.INTEGER,
-              allowNull: false
+              allowNull: true
           },
         category: {
               type: DataTypes.STRING,

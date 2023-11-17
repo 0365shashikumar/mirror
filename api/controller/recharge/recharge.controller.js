@@ -28,6 +28,7 @@ class Recharge {
     }
 
     async recharge(req,res) {  
+
 		  let results = {};
 		  const {mobile,amount,type, operatorId, env, project_id, main_amount, ConsumerNumber} = req;
 	
@@ -38,11 +39,10 @@ class Recharge {
       }
       
 
-      let transaction;
+      let t;
             
       try {
         let userId = 1;
-        let walletbalance = await this.db.wallet.getWalletAmount(userId);
         let user_type = 'Prime';
         let plan_id = 1;
         let date = new Date();
@@ -51,6 +51,7 @@ class Recharge {
         let lastDay = new Date(date.getFullYear(), date.getMonth() + 1, 0);
         firstDay = utility.formatDate(firstDay);
         lastDay = utility.formatDate(lastDay);
+        let walletbalance = await this.db.wallet.getWalletAmount(userId);
 
         if(walletbalance!==null && walletbalance > 0 && walletbalance >= main_amount)
         {
@@ -113,10 +114,9 @@ class Recharge {
             let fasttag = await this.db.recharge.getRechargeCount(userId, firstDay, lastDay, 'fasttag');
             rechargePermission = electricity + fasttag;
           }
-          
+          t = await this.db.sequelize.transaction();
           if(rechargePermission==0)
           {
-            //transaction = await sequelize.transaction();
             // Recahrge Entry
             const rechargeData = { 
               ConsumerNumber: ConsumerNumber, 
@@ -135,13 +135,15 @@ class Recharge {
               transaction_id: transaction_id,
               status:2
             };
-            const rechargeEntry = await this.db.recharge.insert(rechargeData);
+            const rechargeEntry = await this.db.recharge.insert(rechargeData, { transaction: t });
 
             if (rechargeEntry) {
               const getAllrecharge = await this.db.recharge.getAllRechargeCount();
+              
               let requestId = transaction_id + getAllrecharge;
-              //const response = rechargeUtility.pbms(requestId, operatorId, mobile, ConsumerNumber, main_amount );
-              const response = {"result":{"message":"Request from invalid IP:117.99.232.105","status":"SUCCESS","transactionID":"TXN1699870267594","refrenceID":"TXN169987026759480","consumerNumber":"","openingBalance":0,"amount":0,"closingBalance":0,"commission":0,"operator":0,"vendorID":0,"isOTP":false,"apiUserRequestID":"","beneficiaryName":""}};
+              
+              // Payboombiz
+              const response = await rechargeUtility.pbms(requestId, operatorId, mobile, ConsumerNumber, main_amount );
               
               if(response.result.status == 'SUCCESS' || response.result.status == 'PROCESS')
               {
@@ -154,7 +156,7 @@ class Recharge {
                 }
                 let tran_for = 'Main';
                 let is_cashfree = 0;
-                let mt = 0;
+                let pay_mode = 0;
                 
                 //entry in wallet for deduction
                 const walletData = { 
@@ -163,7 +165,7 @@ class Recharge {
                   env: env,
                   type: 'Debit',
                   sub_type: null,
-                  for: 'Deduct',
+                  entry_for: 'Deduct',
                   opening_balance: openingBalance,
                   credit: credit,
                   debit: debit,
@@ -171,9 +173,9 @@ class Recharge {
                   tran_for: tran_for,
                   project_id: project_id,
                   is_cashfree: is_cashfree,
-                  mt: mt
+                  pay_mode: pay_mode
                 };
-                const deductionEntry = this.db.wallet.insert(walletData);
+                const deductionEntry = this.db.wallet.insert(walletData, { transaction: t });
 
                 //Entry for cashback
                 if(cashback_amount > 0)
@@ -190,7 +192,7 @@ class Recharge {
                     project_id: project_id,
                     is_cashfree: is_cashfree
                   };
-                  const cashbackEntry = this.db.cashback.insert(cashbackData);
+                  const cashbackEntry = this.db.cashback.insert(cashbackData, { transaction: t });
                 }
                 
                 //create for coupon
@@ -224,7 +226,7 @@ class Recharge {
                     redeem_amount:wallet_amount
                   }
                   
-                  const couponEntry = await this.db.coupon.insert(couponData);
+                  const couponEntry = await this.db.coupon.insert(couponData, { transaction: t });
                 }
 
                 //update in recharge for success
@@ -242,20 +244,24 @@ class Recharge {
                 }
 
                 const whereClause = { id:rechargeEntry.id };
-                const updateRecharge = await this.db.recharge.updateData(updateData, whereClause);
+                const updateRecharge = await this.db.recharge.updateData(updateData, whereClause, { transaction: t });
                 
                 if(updateRecharge)
                 {
-                 // await transaction.commit();
+                  await t.commit();
                   return res.status(200).json({ status: 200,  message: 'Recharge successfully done' ,data:rechargeEntry});
                 }
+                await t.rollback();
               }else{
+                await t.rollback()
                 return res.status(500).json({ status: 500,error: 'Recharge process not completed due to some bank issue' });
               }
             }else{
+              await t.rollback()
               return res.status(500).json({ status: 500,error: 'Sorry ! Please try again' });
             }
           }else{
+            await t.rollback()
             return res.status(500).json({ status: 500,error: 'You have already bill payment from this account' });
           }
         }else{
@@ -263,7 +269,7 @@ class Recharge {
         }
     
       }catch (error) {
-        //if (transaction) await transaction.rollback();
+        await t.rollback();
         logger.error(`Unable to find user: ${error}`);
         if (error.name === 'SequelizeValidationError') {
           const validationErrors = error.errors.map((err) => err.message);

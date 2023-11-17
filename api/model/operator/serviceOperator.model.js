@@ -1,7 +1,31 @@
 // Define the Countries model
 module.exports = (sequelize, DataTypes, Model) => {
 
-    class serviceOperator extends Model {}
+    class serviceOperator extends Model {
+      static async insertData(data) {
+        try {
+          const result = await this.create(data);
+            return result;
+        } catch (error) {
+            console.error('Error:', error);
+            throw error;
+        }
+      }
+      static async getAllData() {
+        try {
+          const result = await this.findAll({
+              where: {
+                status: 1,
+              },
+              order: [['operator_name', 'ASC']],
+            });
+            return result;
+        } catch (error) {
+            console.error('Error:', error);
+            throw error;
+        }
+      }
+    }
 
     serviceOperator.init({
         id: {

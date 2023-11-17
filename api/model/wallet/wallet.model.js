@@ -12,29 +12,6 @@ module.exports = (sequelize, DataTypes, Model) => {
         }
       }
 
-      async walletEntry(user_id, transaction_id, env, type, sub_type, forwallet, opening_balance, credit, debit, closing_balance, tran_for, project_id, is_cashfree, mt){
-          const newUser = await this.db.wallet.create(
-            {
-                user_id,
-                transaction_id,
-                env,
-                type,
-                sub_type,
-                for:forwallet,
-                opening_balance,
-                credit,
-                debit,
-                closing_balance,
-                tran_for,
-                project_id,
-                is_cashfree,
-                mt
-            },{ validate: true, transaction: t,logging: sql => logger.info(sql),  }
-          );
-  
-        return results;
-      }
-
       static async getWalletAmount(user_id) {
         const credit_amount = await this.findOne({
           attributes: [
@@ -87,8 +64,8 @@ module.exports = (sequelize, DataTypes, Model) => {
         id: {
           type: DataTypes.INTEGER,
           allowNull: false,
-		  primaryKey: true,
-		  autoIncrement: true
+		      primaryKey: true,
+		      autoIncrement: true
         },
         user_id:{
             type: DataTypes.INTEGER,
@@ -110,7 +87,7 @@ module.exports = (sequelize, DataTypes, Model) => {
               type: DataTypes.STRING,
               allowNull: true
           },
-          for: {
+        entry_for: {
             type: DataTypes.STRING,
             allowNull: false
         },
@@ -170,13 +147,10 @@ module.exports = (sequelize, DataTypes, Model) => {
             type: DataTypes.INTEGER,
             allowNull: true
         },
-        mt: {
+        pay_mode: {
             type: DataTypes.INTEGER,
             allowNull: true
         }
-          
-          
-          
         
   
       },

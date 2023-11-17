@@ -4,14 +4,25 @@ const crypto = require('crypto');
 const pbmsConfig = rechargeModule.pbms();
 
 function pbms(requestId, operatorId, mobile_no, ConsumerNumber, amount ) {
+    
+    return new Promise((resolve, reject) => {
+        let apiUrl = pbmsConfig.url;
+        if(ConsumerNumber !== null){
+            apiUrl += "&OperatorID="+operatorId+"&APIUserRequestID="+requestId+"&ConsumerNumber="+ConsumerNumber+"&Amount="+amount+"";
+        }else{
+            apiUrl += "&OperatorID="+operatorId+"&APIUserRequestID="+requestId+"&ConsumerNumber="+mobile_no+"&Amount="+amount+"";
+        }
 
-    const url = pbmsConfig.url;
-    if(ConsumerNumber !== null){
-        url += "&OperatorID="+operatorId+"&APIUserRequestID="+requestId+"&ConsumerNumber="+ConsumerNumber+"&Amount="+amount+"";
-    }else{
-        url += "&OperatorID="+operatorId+"&APIUserRequestID="+requestId+"&ConsumerNumber="+mobile_no+"&Amount="+amount+"";
-    }
-    return axios.get(url);
+        axios.get(apiUrl) 
+            .then((response) => {
+                resolve({ result: response.data }); 
+                })
+            .catch((error) => {
+                console.log(error);
+                reject(error); 
+            });
+            
+    });
 
 }
 

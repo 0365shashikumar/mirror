@@ -1,13 +1,15 @@
 const express = require('express');
 const app = express();
+const multer = require('multer');
+const upload = multer();
 const bodyParser = require('body-parser');
 //const logger = require('./api/logger/api.logger');
 //const graphqlApp = require('./api/controller/graphql.js');
 const helmet = require('helmet');
 const cors = require('cors');
-
+//app.use(upload.any());
 app.use(bodyParser.json());
-app.use(bodyParser.urlencoded({ extended: true }));
+app.use(bodyParser.urlencoded({ extended: false }));
 const allowedOrigin = 'https://mirror.org.in'; //domain
 
 // CORS options
@@ -80,7 +82,7 @@ const rechargeServices = require('./api/router/recharge/services');
 app.use('/api/rechage', rechargeServices);
 
 const serviceOperator = require('./api/router/operator/operator');
-app.use('/api/rechage', serviceOperator);
+app.use('/api/operator', serviceOperator);
 
 
 const rechargeServicesOperator = require('./api/router/recharge/serviceOperator');
@@ -95,6 +97,13 @@ app.use('/api/rechage', rechargeServicesDiscount);
 
 const recharge = require('./api/router/recharge/recharge');
 app.use('/api/recharge', recharge);
+
+
+const add_money = require('./api/router/add_money/add_money');
+app.use('/api/add_money', add_money);
+
+const mplan = require('./api/router/plan/plan');
+app.use('/api/browsePlan', mplan);
 
 
 app.listen(port, () => {
